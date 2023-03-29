@@ -1,5 +1,6 @@
 import mapboxgl from 'mapbox-gl'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Subject } from 'rxjs'
 import { v4 } from 'uuid'
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiZ3VzdGF2cjAiLCJhIjoiY2xmcHlia2FqMHZ4MjN1cGpheHluNGN4cyJ9.hllBWiXuhnDwpIJzCMuzJw'
@@ -13,22 +14,54 @@ export const useMapBox = (pointInit) => {
   // Reference markers
   const marcadores = useRef({})
 
+  // Observables Rxjs
+  const moviemientoMarcador = useRef(new Subject())
+  const nuevoMarcador = useRef(new Subject())
+
   // Maps and Coords
   const mapRef = useRef()
   const [coords, setCoords] = useState(pointInit)
 
   // function add marker
-  const agregarMacador = useCallback((event) => {
-    const { lng, lat } = event.lngLat
+  const agregarMacador = useCallback((event, id) => {
+    const { lng, lat } = event.lngLat || event
     const marker = new mapboxgl.Marker()
 
-    marker.id = v4() // Si el marcador tiene id
+    marker.id = id ?? v4() // Si el marcador tiene id
     marker
       .setLngLat({ lng, lat })
       .addTo(mapRef.current)
       .setDraggable(true)
 
+    // Asignar al objeto de marcadores
     marcadores.current[marker.id] = marker
+
+    // Todo: Si el marcador tiene id no emitir
+    if (!id) {
+      nuevoMarcador.current.next({
+        id: marker.id,
+        lng,
+        lat
+      })
+    }
+
+    // escuchar movimientos del marcador
+    marker.on('drag', ({ target }) => {
+      const { id } = target
+      const { lng, lat } = target.getLngLat()
+      // Todo: Emitir los cambios del marcador
+      moviemientoMarcador.current.next({
+        id,
+        lng,
+        lat
+      })
+    })
+  }, [])
+
+  // Funcion para actualizar movimiento marcador
+  const actualizarPosicion = useCallback((marcador) => {
+    const { id, lng, lat } = marcador
+    marcadores.current[id].setLngLat({ lng, lat })
   }, [])
 
   useEffect(() => {
@@ -61,7 +94,10 @@ export const useMapBox = (pointInit) => {
 
   return {
     agregarMacador,
+    actualizarPosicion,
     coords,
+    nuevoMarcador$: nuevoMarcador.current,
+    moviemientoMarcador$: moviemientoMarcador.current,
     setRef
   }
 }

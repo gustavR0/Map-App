@@ -1,3 +1,5 @@
+import { useContext, useEffect } from 'react'
+import { SocketContext } from '../context/SocketContext'
 import { useMapBox } from '../hooks/useMapBox'
 
 const pointInit = {
@@ -7,7 +9,45 @@ const pointInit = {
 }
 
 export const MapPage = () => {
-  const { coords, setRef } = useMapBox(pointInit)
+  const { agregarMacador, actualizarPosicion, coords, setRef, nuevoMarcador$, moviemientoMarcador$ } = useMapBox(pointInit)
+  const { socket } = useContext(SocketContext)
+
+  // Escuchar marcadores existentes
+  useEffect(() => {
+    socket.on('marcadores-activos', (marcadores) => {
+      for (const key of Object.keys(marcadores)) {
+        agregarMacador(marcadores[key], key)
+      }
+    })
+  }, [socket, agregarMacador])
+
+  // Enviar nuevo marcador
+  useEffect(() => {
+    nuevoMarcador$.subscribe(marcador => {
+      socket.emit('marcador-nuevo', marcador)
+    })
+  }, [nuevoMarcador$, socket])
+
+  // Actualizar marcador
+  useEffect(() => {
+    moviemientoMarcador$.subscribe(marcador => {
+      socket.emit('marcador-actualizado', marcador)
+    })
+  }, [moviemientoMarcador$, socket])
+  // Escuchar actualización del marcador ws
+  useEffect(() => {
+    socket.on('marcador-actualizado', marcador => {
+      actualizarPosicion(marcador)
+    })
+  }, [socket])
+
+  // Crear Nuevo Marcador
+  useEffect(() => {
+    socket.on('marcador-nuevo', (marcador) => {
+      agregarMacador(marcador, marcador.id)
+    })
+  }, [socket, agregarMacador])
+
   return (
     <>
       <div className='info'>
