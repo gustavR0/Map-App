@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 *.lock
+
+.env
+.env.development
+.env.production

@@ -3,7 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Subject } from 'rxjs'
 import { v4 } from 'uuid'
 
-mapboxgl.accessToken = 'pk.eyJ1IjoiZ3VzdGF2cjAiLCJhIjoiY2xmcHlia2FqMHZ4MjN1cGpheHluNGN4cyJ9.hllBWiXuhnDwpIJzCMuzJw'
+const accessToken = import.meta.env.VITE_REACT_APP_MAPBOX_ACCESS_TOKEN
+
+mapboxgl.accessToken = accessToken
 export const useMapBox = (pointInit) => {
   // Referencia al div del mapa
   const mapDiv = useRef()
